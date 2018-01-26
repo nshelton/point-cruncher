@@ -1,0 +1,69 @@
+﻿#pragma kernel VolumeFilter
+
+Texture3D<float4> _densityTexture;
+
+RWTexture3D<float4> _densityTextureOutput;
+
+int _gridSize;
+int _morph;
+
+float SampleData(int3 pos) {
+	return _densityTexture.Load(int4(pos, 0)).x;
+}
+
+[numthreads(8, 8, 8)]
+void VolumeFilter(uint3 threadId : SV_DispatchThreadID)
+{
+    float result = 0;
+
+    if ( _morph == 0 || _morph == 1)
+    {
+        float sign = _morph == 0 ? -1 : 1;
+
+        float vals[8] = {
+            SampleData(threadId + sign * int3(0, 0, 1)),
+            SampleData(threadId + sign * int3(1, 0, 1)),
+            SampleData(threadId + sign * int3(1, 0, 0)),
+            SampleData(threadId + sign * int3(0, 0, 0)),
+            SampleData(threadId + sign * int3(0, 1, 1)),
+            SampleData(threadId + sign * int3(1, 1, 1)),
+            SampleData(threadId + sign * int3(1, 1, 0)),
+            SampleData(threadId + sign * int3(0, 1, 0))
+        };
+
+        float val = _morph;
+        for (int i = 0; i < 8; i ++)
+        {
+            if (_morph == 0)
+                val = max(val, vals[i]);
+
+            if (_morph == 1)
+                val = min(val, vals[i]);
+        }
+        result = val;
+    }
+    else 
+    {
+        int3 delta = int3 (0,0,1);
+
+        if ( _morph == 3)
+            delta = int3(0,1,0);
+
+        if ( _morph == 4)
+            delta = int3(1,0,0);
+        
+        float weights[7] = {0.00598, 0.060626, 0.241843, 0.383103, 0.241843, 0.060626, 0.00598};
+        
+        result = 
+            weights[0] * SampleData(threadId + delta * 3) + 
+            weights[1] * SampleData(threadId + delta * 2) + 
+            weights[2] * SampleData(threadId + delta * 1) + 
+            weights[3] * SampleData(threadId + delta * 0) + 
+            weights[4] * SampleData(threadId - delta * 1) + 
+            weights[5] * SampleData(threadId - delta * 2) + 
+            weights[6] * SampleData(threadId - delta * 3);
+    }
+
+     
+    _densityTextureOutput[threadId] = float4(result, 0, 0, 0);
+}
