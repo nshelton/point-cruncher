@@ -28,6 +28,7 @@ namespace PavelKouril.MarchingCubesGPU
         private ComputeShader m_sampleCS;
 
     	private int kernelID;
+    	private int clearKernel;
 
         private Color[] colors;
         public bool initialized = false;
@@ -36,6 +37,7 @@ namespace PavelKouril.MarchingCubesGPU
         {
             densityRenderTexture = CreateTexture();
             kernelID = m_sampleCS.FindKernel("PointSampler");
+            clearKernel = m_sampleCS.FindKernel("Clear");
 
             output = GetComponent<DensityFieldFilter>();
 
@@ -44,13 +46,10 @@ namespace PavelKouril.MarchingCubesGPU
 
             colors = new Color[(int)Resolution * (int)Resolution * (int)Resolution];
 
-            for (int i = 0; i < colors.Length; i++) colors[i] = Color.white;
+            for (int i = 0; i < colors.Length; i++) 
+                colors[i] = Color.black;
+            
             initialized = true;
-        }
-
-        private void Update()
-        {
-            // output.DensityTexture = densityRenderTexture;
         }
 
         RenderTexture CreateTexture()
@@ -68,22 +67,23 @@ namespace PavelKouril.MarchingCubesGPU
 
         public void CreateField()
         {
-            m_sampleCS.SetInt("_gridSize", Resolution);
-            initialized = true;
-
             RenderTexture.active = densityRenderTexture;
 
+            m_sampleCS.SetTexture(clearKernel, "_outputTexture", densityRenderTexture);
+            m_sampleCS.Dispatch(clearKernel, Resolution/8, Resolution/8, Resolution/8);
+            
             m_sampleCS.SetTexture(kernelID, "_outputTexture", densityRenderTexture);
-            m_sampleCS.SetBuffer(kernelID, "_pointBuffer", m_points.sourceData.computeBuffer);
+            m_sampleCS.SetBuffer(kernelID, "_inputData", m_points.sourceData.computeBuffer);
+            m_sampleCS.SetInt("_gridSize", Resolution);
 
-            var matrix = transform.worldToLocalMatrix * m_points.transform.localToWorldMatrix;
-            m_sampleCS.SetMatrix("_pointToVolumeTransform", matrix);
+            m_sampleCS.SetMatrix("_pointsTransform", m_points.transform.localToWorldMatrix);
+            m_sampleCS.SetMatrix("_volumeTransformInv", transform.worldToLocalMatrix);
 
-            int numInvocations =  Mathf.CeilToInt(m_points.sourceData.computeBuffer.count / 128f);
-
+            int numInvocations = Mathf.CeilToInt(m_points.sourceData.computeBuffer.count / 128f);
             m_sampleCS.Dispatch(kernelID, numInvocations, 1, 1);
 
             RenderTexture.active = null;
+            output.DensityTexture = densityRenderTexture;
         }
 
         [ContextMenu("Mesh")]
@@ -101,6 +101,7 @@ namespace PavelKouril.MarchingCubesGPU
             for (int i = 0; i < data.Length; i++)
             {
                 Vector3 p = data[i].position;
+
                 p = m_points.transform.TransformPoint(p);
                 p = transform.InverseTransformPoint(p);
 

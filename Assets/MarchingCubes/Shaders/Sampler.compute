@@ -1,28 +1,43 @@
 ﻿// Each #kernel tells which function to compile; you can have many kernels
 #pragma kernel PointSampler
+#pragma kernel Clear
 
 // Create a RenderTexture with enableRandomWrite flag and set it
 // with cs.SetTexture
 RWTexture3D<float4> _outputTexture;
-RWStructuredBuffer<float3> _inputData;
-float4x4 _pointToVolumeTransform;
+StructuredBuffer<float3> _inputData;
+float4x4 _pointsTransform;
+float4x4 _volumeTransformInv;
 int _gridSize;
 
 [numthreads(128,1,1)]
 void PointSampler (uint3 id : SV_DispatchThreadID)
 {
-	float4 p = float4(_inputData[id.x], 1.0);
-	p = mul(_pointToVolumeTransform, p);
+	float4 p = float4(_inputData[id.x].xyz, 1.0);
 
-	if (abs(p.x) > 0.5 || abs(p.y) > 0.5 || abs(p.z) > 0.5)
+	p = mul(_pointsTransform, p);
+	p = mul(_volumeTransformInv, p);
+
+	p += 0.5;
+
+	int3 cell = ((p.xyz) * _gridSize);
+
+	if (cell.x < 0 || 
+		cell.y < 0 || 
+		cell.z < 0 ||
+		cell.x >= _gridSize ||
+		cell.y >= _gridSize ||
+		cell.z >= _gridSize )
 	{
 		return;
 	}
 
-	p += 0.5;
+	_outputTexture[cell] = _outputTexture[cell] + (float4)1.0;
 
-	uint3 cell = floor(sin(p.xyz) * _gridSize);
+}
 
-	_outputTexture[cell] = (float4)1.0;
-
+[numthreads(8, 8, 8)]
+void Clear (uint3 id : SV_DispatchThreadID)
+{
+	_outputTexture[id] = 0;
 }

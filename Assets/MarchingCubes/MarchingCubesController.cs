@@ -14,6 +14,14 @@ public class MarchingCubesController : MonoBehaviour
         public Vector3[] verts;
         public int[] faces;
     }
+    [SerializeField]
+    public bool m_doGPUSampler = false;
+
+    [SerializeField]
+    public bool m_doFilter = false;
+
+    [SerializeField]
+    public float m_decimatePct = 1f;
 
     [SerializeField]
     public int m_gridDimXY;
@@ -31,7 +39,7 @@ public class MarchingCubesController : MonoBehaviour
     [SerializeField]
     public PavelKouril.MarchingCubesGPU.MarchingCubes marchingCubes;
 
-    private bool didRun = false;
+    public bool didRun = false;
 
     private GameObject AddMesh(UnityEngine.Mesh mesh, string name)
     {
@@ -86,7 +94,7 @@ public class MarchingCubesController : MonoBehaviour
 
         MeshDecimator.Mesh mergedMesh = new MeshDecimator.Mesh(newVerts.ToArray(), newIndicies);
 
-        UnityEngine.Mesh result = MeshDecimator.Unity.MeshDecimatorUtility.DecimateMeshBasic(mergedMesh, Matrix4x4.identity, 0.5f, true, Callback);
+        UnityEngine.Mesh result = MeshDecimator.Unity.MeshDecimatorUtility.DecimateMeshBasic(mergedMesh, Matrix4x4.identity, m_decimatePct, true, Callback);
 
         result.RecalculateBounds();
         result.RecalculateNormals();
@@ -102,26 +110,28 @@ public class MarchingCubesController : MonoBehaviour
 
         // (new Thread(() => {
         Debug.Log("Reconstruct   ");
-        generator.CreateFieldCPU();
-        Debug.Log("dONE cREATEfIELD");
+        if (m_doGPUSampler)
+        {
+            generator.CreateField();
+
+        }
+        else
+        {
+            generator.CreateFieldCPU();
+        }
 
         // })).Start(); 
-
-        filter.Filter();
+        filter.Filter(!m_doFilter);
         Debug.Log("dONE Filter");
 
         marchingCubes.Mesh();
-        Debug.Log("dONE mESHING");
-
         return ConvertMesh(marchingCubes.ExportMDMesh());
     }
 
     public static void SaveMesh(UnityEngine.Mesh mesh, GameObject obj, string name)
     {
-
         // string path = EditorUtility.SaveFilePanel("Save Separate Mesh Asset", "Assets/", name, "asset");
         // if (string.IsNullOrEmpty(path)) return;
-
         // path = FileUtil.GetProjectRelativePath(path);
 
         MeshUtility.Optimize(mesh);
@@ -138,12 +148,11 @@ public class MarchingCubesController : MonoBehaviour
 
     public void DoDaTing()
     {
-        int dim = 1;
         Vector3 firstPos = marchingCubes.transform.position;
-        for (int dz = 0; dz < 2; dz++)
-            for (int dx = 0; dx < dim; dx++)
+        for (int dz = 0; dz < m_gridDimZ; dz++)
+            for (int dx = 0; dx < m_gridDimXY; dx++)
             {
-                for (int dy = 0; dy < dim; dy++)
+                for (int dy = 0; dy < m_gridDimXY; dy++)
                 {
                     var name = string.Format("{0}.{1}.{2}.{3}.{4}", System.DateTime.Now.Hour, System.DateTime.Now.Minute, dx, dy, dz);
                     Vector3 newPos = firstPos + new Vector3(dx, dz, dy) * transform.localScale.x * 0.9f;
@@ -157,9 +166,12 @@ public class MarchingCubesController : MonoBehaviour
     }
 
     [ContextMenu("Run")]
-    public void DoDaAsyncTing()
+    public void GPUUpdate()
     {
-        DoDaTing();
+            generator.CreateField();
+            filter.Filter(!m_doFilter);
+            marchingCubes.Mesh();
+            marchingCubes.doRender = true;
     }
 
     void Update()
@@ -170,6 +182,8 @@ public class MarchingCubesController : MonoBehaviour
             didRun = true;
             DoDaTing();
         }
+        
+        GPUUpdate();
     }
 
     void OnDrawGizmos()
@@ -188,7 +202,7 @@ public class MarchingCubesController : MonoBehaviour
             }
         }
 
-		Vector3 dim = new Vector3(m_gridDimXY, m_gridDimZ, m_gridDimXY);
+        Vector3 dim = new Vector3(m_gridDimXY, m_gridDimZ, m_gridDimXY);
         Gizmos.color = Color.blue;
         Gizmos.DrawWireCube(
             transform.position + (transform.lossyScale.x / 2) * (dim - Vector3.one),
