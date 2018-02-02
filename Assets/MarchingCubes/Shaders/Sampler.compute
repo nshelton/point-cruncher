@@ -31,9 +31,12 @@ void PointSampler (uint3 id : SV_DispatchThreadID)
 	{
 		return;
 	}
-
-	_outputTexture[cell] = _outputTexture[cell] + (float4)1.0;
-
+	
+	for ( int i = cell.y; i > 0; i --)
+	{
+		cell.y = i;
+		_outputTexture[cell] = _outputTexture[cell] + (float4)1.0;
+	}
 }
 
 [numthreads(8, 8, 8)]

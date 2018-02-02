@@ -54,29 +54,41 @@ public class DensityFieldFilter : MonoBehaviour
     }
 
     [ContextMenu("Filter")]
-    public void Filter(bool bypass)
+    public void Filter(bool bypass, int erode, int dilate, float gaussian)
     {
-  
-        // // Try to remove outliers by eroding once 
-        RunFilter(DensityTexture, FilteredTexture1, 0);
+
+        // if ( bypass )
+        // {
+        // 	 Output.DensityTexture = DensityTexture;
+        // }
+
+        // Try to remove outliers by eroding once 
+        RunFilter(DensityTexture, FilteredTexture0, 0);
+        RunFilter(FilteredTexture0, FilteredTexture1, 0);
         RunFilter(FilteredTexture1, FilteredTexture0, 1);
+        RunFilter(FilteredTexture0, FilteredTexture1, 1);
+
+
+        // Dilate 4 cells
+        // for (int i = 0; i < dilate-1; i++)
+        // {
+        //     RunFilter(FilteredTexture1, FilteredTexture0, 0);
+        //     RunFilter(FilteredTexture0, FilteredTexture1, 0);
+        // }
+
 
         // // Dilate 4 cells
-        // RunFilter(FilteredTexture1, FilteredTexture0, 0);
-        // RunFilter(FilteredTexture0, FilteredTexture1, 0);
-        // RunFilter(FilteredTexture1, FilteredTexture0, 0);
-        // RunFilter(FilteredTexture0, FilteredTexture1, 0);
+        // for (int i = 0; i < erode; i++)
+        // {
+        //     RunFilter(FilteredTexture1, FilteredTexture0, 1);
+        //     RunFilter(FilteredTexture0, FilteredTexture1, 1);
+        // }
 
-        // // Erode 4 cells
-        // RunFilter(FilteredTexture1, FilteredTexture0, 1);
-        // RunFilter(FilteredTexture0, FilteredTexture1, 1);
-        // RunFilter(FilteredTexture1, FilteredTexture0, 1);
-        // RunFilter(FilteredTexture0, FilteredTexture1, 1);
 
-        // // // // Blur XYZ
-        // RunFilter(FilteredTexture1, FilteredTexture0, 2);
-        // RunFilter(FilteredTexture0, FilteredTexture1, 3);
-        // RunFilter(FilteredTexture1, FilteredTexture0, 4);
+        // // // Blur XYZ
+        RunFilter(FilteredTexture1, FilteredTexture0, 2);
+        RunFilter(FilteredTexture0, FilteredTexture1, 3);
+        RunFilter(FilteredTexture1, FilteredTexture0, 4);
 
         // RunFilter(FilteredTexture0, FilteredTexture1, 2);
         // RunFilter(FilteredTexture1, FilteredTexture0, 3);
@@ -86,7 +98,7 @@ public class DensityFieldFilter : MonoBehaviour
         // RunFilter(FilteredTexture0, FilteredTexture1, 3);
         // RunFilter(FilteredTexture1, FilteredTexture0, 4);
 
-            Output.DensityTexture = FilteredTexture0;
+        Output.DensityTexture = FilteredTexture0;
 
 
     }

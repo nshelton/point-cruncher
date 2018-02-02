@@ -646,7 +646,7 @@ namespace MeshDecimator.Unity
 
         public static UMesh DecimateMeshBasic(Mesh sourceMesh, UMatrix transform, float quality, bool recalculateNormals, DecimationAlgorithm.StatusReportCallback statusCallback = null)
         {
-            var algorithm = MeshDecimation.CreateAlgorithm(Algorithm.Default);
+            var algorithm = MeshDecimation.CreateAlgorithm(Algorithm.FastQuadraticMesh);
             algorithm.MaxVertexCount = ushort.MaxValue;
             if (statusCallback != null)
             {

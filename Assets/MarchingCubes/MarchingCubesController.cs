@@ -20,6 +20,16 @@ public class MarchingCubesController : MonoBehaviour
     [SerializeField]
     public bool m_doFilter = false;
 
+
+    [SerializeField]
+    public int m_dilateIter = 1;
+
+    [SerializeField]
+    public int m_erodeIter = 1;
+
+    [SerializeField]
+    public int m_blurIter = 1;
+
     [SerializeField]
     public float m_decimatePct = 1f;
 
@@ -99,21 +109,19 @@ public class MarchingCubesController : MonoBehaviour
         result.RecalculateBounds();
         result.RecalculateNormals();
 
-        // Vector2[] uv = Unwrapping.GeneratePerTriangleUV(result);
-        // MeshUtility.SetPerTriangleUV2(result, uv);
+        Vector2[] uv = Unwrapping.GeneratePerTriangleUV(result);
+        MeshUtility.SetPerTriangleUV2(result, uv);
 
         // Unwrapping.GenerateSecondaryUVSet(result);
         return result;
     }
     private UnityEngine.Mesh Reconstruct()
     {
-
         // (new Thread(() => {
-        Debug.Log("Reconstruct   ");
+        Debug.Log("Reconstruct");
         if (m_doGPUSampler)
         {
             generator.CreateField();
-
         }
         else
         {
@@ -121,7 +129,7 @@ public class MarchingCubesController : MonoBehaviour
         }
 
         // })).Start(); 
-        filter.Filter(!m_doFilter);
+        filter.Filter(!m_doFilter, m_erodeIter, m_dilateIter, m_blurIter);
         Debug.Log("dONE Filter");
 
         marchingCubes.Mesh();
@@ -154,13 +162,20 @@ public class MarchingCubesController : MonoBehaviour
             {
                 for (int dy = 0; dy < m_gridDimXY; dy++)
                 {
+                    System.DateTime t0 = System.DateTime.Now;
                     var name = string.Format("{0}.{1}.{2}.{3}.{4}", System.DateTime.Now.Hour, System.DateTime.Now.Minute, dx, dy, dz);
+                    Debug.LogFormat("Converting {0}", name);
                     Vector3 newPos = firstPos + new Vector3(dx, dz, dy) * transform.localScale.x * 0.9f;
                     marchingCubes.transform.position = newPos;
 
                     UnityEngine.Mesh rawMcMesh = Reconstruct();
+                    System.DateTime t1 = System.DateTime.Now;
+                    Debug.LogFormat("Reconstruction , in {2}", dx, dy, t1 - t0);
 
                     AddMesh(rawMcMesh, name);
+
+                    System.DateTime t2 = System.DateTime.Now;
+                    Debug.LogFormat("AddMesh in {2}", dx, dy, t2 - t1);
                 }
             }
     }
@@ -168,10 +183,23 @@ public class MarchingCubesController : MonoBehaviour
     [ContextMenu("Run")]
     public void GPUUpdate()
     {
-            generator.CreateField();
-            filter.Filter(!m_doFilter);
-            marchingCubes.Mesh();
-            marchingCubes.doRender = true;
+        generator.CreateField();
+        filter.Filter(!m_doFilter, m_erodeIter, m_dilateIter, m_blurIter);
+
+        marchingCubes.Mesh();
+        marchingCubes.doRender = true;
+    }
+
+    private void Export()
+    {
+        var name = string.Format("{0}.{1}.{2}.{3}.{4}",
+            System.DateTime.Now.Hour,
+            System.DateTime.Now.Minute,
+            transform.position.x,
+            transform.position.y,
+            transform.position.z);
+        UnityEngine.Mesh rawMcMesh = Reconstruct();
+        AddMesh(rawMcMesh, name);
     }
 
     void Update()
@@ -182,8 +210,13 @@ public class MarchingCubesController : MonoBehaviour
             didRun = true;
             DoDaTing();
         }
-        
+
         GPUUpdate();
+
+        if (Input.GetKeyDown("space"))
+        {
+            Export();
+        }
     }
 
     void OnDrawGizmos()
