@@ -16,7 +16,8 @@ void VolumeFilter(uint3 threadId : SV_DispatchThreadID)
 {
     float result = 0;
 
-    if ( _morph == 0 || _morph == 1)
+    // TODO get a better morphology here? ?! 
+    if ( _morph == 0 || _morph == 1) // Dilate Erode
     {
         float sign = _morph == 0 ? -1 : 1;
 
@@ -42,7 +43,7 @@ void VolumeFilter(uint3 threadId : SV_DispatchThreadID)
         }
         result = val;
     }
-    else 
+    else if ( _morph == 2 || _morph == 3 ||  _morph == 4 ) // Gaussian
     {
         int3 delta = int3 (0,0,1);
 
@@ -62,6 +63,10 @@ void VolumeFilter(uint3 threadId : SV_DispatchThreadID)
             weights[4] * SampleData(threadId - delta * 1) + 
             weights[5] * SampleData(threadId - delta * 2) + 
             weights[6] * SampleData(threadId - delta * 3);
+    }
+    else // Just Copy
+    {
+        _densityTextureOutput[threadId] =  float4(SampleData(threadId), 0, 0, 0);
     }
 
      

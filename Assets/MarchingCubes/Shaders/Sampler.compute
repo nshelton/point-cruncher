@@ -23,10 +23,8 @@ void PointSampler (uint3 id : SV_DispatchThreadID)
 	int3 cell = ((p.xyz) * _gridSize);
 
 	if (cell.x < 0 || 
-		cell.y < 0 || 
 		cell.z < 0 ||
 		cell.x >= _gridSize ||
-		cell.y >= _gridSize ||
 		cell.z >= _gridSize )
 	{
 		return;
@@ -34,6 +32,9 @@ void PointSampler (uint3 id : SV_DispatchThreadID)
 	
 	for ( int i = cell.y; i > 0; i --)
 	{
+		if(cell.y > _gridSize)
+			continue;
+	
 		cell.y = i;
 		_outputTexture[cell] = _outputTexture[cell] + (float4)1.0;
 	}

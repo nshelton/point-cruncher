@@ -4,7 +4,15 @@ using UnityEngine;
 
 public class DensityFieldFilter : MonoBehaviour
 {
-
+	private enum FilterType
+	{
+		Dilate = 0,
+		Erode = 1,
+		GaussianX = 2,
+		GaussianY = 3,
+		GaussianZ = 4,
+		Copy = 5
+	}
     public Texture DensityTexture { get; set; }
     public RenderTexture FilteredTexture0 { get; set; }
     public RenderTexture FilteredTexture1 { get; set; }
@@ -41,65 +49,58 @@ public class DensityFieldFilter : MonoBehaviour
         Output.DensityTexture = FilteredTexture1;
     }
 
-    void RunFilter(Texture src, RenderTexture dst, int type)
+	RenderTexture m_lastBuffer;
+
+    void RunFilter(FilterType mode)
     {
+		Texture src;
+		RenderTexture dst;
+
+		 if (m_lastBuffer == null)
+		 {
+			src = DensityTexture;
+			dst = FilteredTexture0;
+		 }
+		else // swap buffers
+		{
+			src = m_lastBuffer;
+			dst = (m_lastBuffer == FilteredTexture0) ? FilteredTexture1 : FilteredTexture0;
+		}
+
         FilterCS.SetTexture(kernelMC, "_densityTexture", src);
         FilterCS.SetTexture(kernelMC, "_densityTextureOutput", dst);
-        FilterCS.SetInt("_morph", type);
+        FilterCS.SetInt("_morph", (int) mode);
         RenderTexture.active = dst;
 
         FilterCS.Dispatch(kernelMC, Output.Resolution / 8, Output.Resolution / 8, Output.Resolution / 8);
 
         RenderTexture.active = null;
+
+		m_lastBuffer = dst;
     }
 
     [ContextMenu("Filter")]
     public void Filter(bool bypass, int erode, int dilate, float gaussian)
     {
+		m_lastBuffer = null;
 
-        // if ( bypass )
-        // {
-        // 	 Output.DensityTexture = DensityTexture;
-        // }
+		RunFilter(FilterType.Copy);
 
-        // Try to remove outliers by eroding once 
-        RunFilter(DensityTexture, FilteredTexture0, 0);
-        RunFilter(FilteredTexture0, FilteredTexture1, 0);
-        RunFilter(FilteredTexture1, FilteredTexture0, 1);
-        RunFilter(FilteredTexture0, FilteredTexture1, 1);
+        for (int i = 0; i < dilate; i++)
+            RunFilter(FilterType.Dilate);
 
 
-        // Dilate 4 cells
-        // for (int i = 0; i < dilate-1; i++)
-        // {
-        //     RunFilter(FilteredTexture1, FilteredTexture0, 0);
-        //     RunFilter(FilteredTexture0, FilteredTexture1, 0);
-        // }
+        for (int i = 0; i < erode; i++)
+            RunFilter(FilterType.Erode);
 
 
-        // // Dilate 4 cells
-        // for (int i = 0; i < erode; i++)
-        // {
-        //     RunFilter(FilteredTexture1, FilteredTexture0, 1);
-        //     RunFilter(FilteredTexture0, FilteredTexture1, 1);
-        // }
+        for (int i = 0; i < gaussian; i++)
+        {
+            RunFilter(FilterType.GaussianX);
+            RunFilter(FilterType.GaussianY);
+            RunFilter(FilterType.GaussianZ);
+        }
 
-
-        // // // Blur XYZ
-        RunFilter(FilteredTexture1, FilteredTexture0, 2);
-        RunFilter(FilteredTexture0, FilteredTexture1, 3);
-        RunFilter(FilteredTexture1, FilteredTexture0, 4);
-
-        // RunFilter(FilteredTexture0, FilteredTexture1, 2);
-        // RunFilter(FilteredTexture1, FilteredTexture0, 3);
-        // RunFilter(FilteredTexture0, FilteredTexture1, 4);
-
-        // RunFilter(FilteredTexture1, FilteredTexture0, 2);
-        // RunFilter(FilteredTexture0, FilteredTexture1, 3);
-        // RunFilter(FilteredTexture1, FilteredTexture0, 4);
-
-        Output.DensityTexture = FilteredTexture0;
-
-
+        Output.DensityTexture = m_lastBuffer;
     }
 }

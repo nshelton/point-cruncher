@@ -184,7 +184,8 @@ public class MarchingCubesController : MonoBehaviour
     public void GPUUpdate()
     {
         generator.CreateField();
-        filter.Filter(!m_doFilter, m_erodeIter, m_dilateIter, m_blurIter);
+        marchingCubes.DensityTexture = generator.densityRenderTexture;
+        //filter.Filter(!m_doFilter, m_erodeIter, m_dilateIter, m_blurIter);
 
         marchingCubes.Mesh();
         marchingCubes.doRender = true;
