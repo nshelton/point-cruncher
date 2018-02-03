@@ -129,7 +129,7 @@ public class MarchingCubesController : MonoBehaviour
         }
 
         // })).Start(); 
-        filter.Filter(!m_doFilter, m_erodeIter, m_dilateIter, m_blurIter);
+        filter.Filter(m_erodeIter, m_dilateIter, m_blurIter);
         Debug.Log("dONE Filter");
 
         marchingCubes.Mesh();
@@ -184,8 +184,8 @@ public class MarchingCubesController : MonoBehaviour
     public void GPUUpdate()
     {
         generator.CreateField();
-        marchingCubes.DensityTexture = generator.densityRenderTexture;
-        //filter.Filter(!m_doFilter, m_erodeIter, m_dilateIter, m_blurIter);
+        // marchingCubes.DensityTexture = generator.densityRenderTexture;
+        filter.Filter(m_erodeIter, m_dilateIter, m_blurIter);
 
         marchingCubes.Mesh();
         marchingCubes.doRender = true;

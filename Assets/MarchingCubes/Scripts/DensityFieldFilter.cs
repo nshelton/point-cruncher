@@ -80,7 +80,7 @@ public class DensityFieldFilter : MonoBehaviour
     }
 
     [ContextMenu("Filter")]
-    public void Filter(bool bypass, int erode, int dilate, float gaussian)
+    public void Filter( int erode, int dilate, float gaussian)
     {
 		m_lastBuffer = null;
 

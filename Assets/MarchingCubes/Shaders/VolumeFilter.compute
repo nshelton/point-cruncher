@@ -66,7 +66,7 @@ void VolumeFilter(uint3 threadId : SV_DispatchThreadID)
     }
     else // Just Copy
     {
-        _densityTextureOutput[threadId] =  float4(SampleData(threadId), 0, 0, 0);
+        result = SampleData(threadId);
     }
 
      
