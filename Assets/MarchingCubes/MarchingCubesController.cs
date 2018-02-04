@@ -20,6 +20,8 @@ public class MarchingCubesController : MonoBehaviour
     [SerializeField]
     public bool m_doFilter = false;
 
+    [SerializeField]
+    public bool m_doPrefilter = false;
 
     [SerializeField]
     public int m_dilateIter = 1;
@@ -82,6 +84,9 @@ public class MarchingCubesController : MonoBehaviour
 
     private UnityEngine.Mesh ConvertMesh(MeshDecimator.Mesh fatMesh)
     {
+        if( fatMesh.VertexCount == 0)
+            return new UnityEngine.Mesh();
+            
         // Merge Same Verts 
         Dictionary<MeshDecimator.Math.Vector3d, int> newVertIndexes = new Dictionary<MeshDecimator.Math.Vector3d, int>();
         List<MeshDecimator.Math.Vector3d> newVerts = new List<MeshDecimator.Math.Vector3d>();
@@ -129,7 +134,7 @@ public class MarchingCubesController : MonoBehaviour
         }
 
         // })).Start(); 
-        filter.Filter(m_erodeIter, m_dilateIter, m_blurIter);
+        filter.Filter(m_doPrefilter, m_erodeIter, m_dilateIter, m_blurIter);
         Debug.Log("dONE Filter");
 
         marchingCubes.Mesh();
@@ -185,7 +190,7 @@ public class MarchingCubesController : MonoBehaviour
     {
         generator.CreateField();
         // marchingCubes.DensityTexture = generator.densityRenderTexture;
-        filter.Filter(m_erodeIter, m_dilateIter, m_blurIter);
+        filter.Filter(m_doPrefilter, m_erodeIter, m_dilateIter, m_blurIter);
 
         marchingCubes.Mesh();
         marchingCubes.doRender = true;

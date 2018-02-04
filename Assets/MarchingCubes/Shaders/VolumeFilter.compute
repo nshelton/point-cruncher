@@ -21,19 +21,46 @@ void VolumeFilter(uint3 threadId : SV_DispatchThreadID)
     {
         float sign = _morph == 0 ? -1 : 1;
 
-        float vals[8] = {
+        float vals[26] = {
+            SampleData(threadId + sign * int3(-1, 0, 1)),
+            SampleData(threadId + sign * int3(-1, 0, 0)),
+            SampleData(threadId + sign * int3(-1, 0, -1)),
+
             SampleData(threadId + sign * int3(0, 0, 1)),
+            SampleData(threadId + sign * int3(0, 0, -1)),
+
             SampleData(threadId + sign * int3(1, 0, 1)),
             SampleData(threadId + sign * int3(1, 0, 0)),
-            SampleData(threadId + sign * int3(0, 0, 0)),
+            SampleData(threadId + sign * int3(1, 0, -1)),
+
+            SampleData(threadId + sign * int3(-1, 1, 1)),
+            SampleData(threadId + sign * int3(-1, 1, 0)),
+            SampleData(threadId + sign * int3(-1, 1, -1)),
+
             SampleData(threadId + sign * int3(0, 1, 1)),
+            SampleData(threadId + sign * int3(0, 1, 0)),
+            SampleData(threadId + sign * int3(0, 1, -1)),
+
             SampleData(threadId + sign * int3(1, 1, 1)),
             SampleData(threadId + sign * int3(1, 1, 0)),
-            SampleData(threadId + sign * int3(0, 1, 0))
+            SampleData(threadId + sign * int3(1, 1, -1)),
+
+            SampleData(threadId + sign * int3(-1, 1, 1)),
+            SampleData(threadId + sign * int3(-1, 1, 0)),
+            SampleData(threadId + sign * int3(-1, 1, -1)),
+
+            SampleData(threadId + sign * int3(0, 1, 1)),
+            SampleData(threadId + sign * int3(0, 1, 0)),
+            SampleData(threadId + sign * int3(0, 1, -1)),
+
+            SampleData(threadId + sign * int3(1, 1, 1)),
+            SampleData(threadId + sign * int3(1, 1, 0)),
+            SampleData(threadId + sign * int3(1, 1, -1)),
+
         };
 
         float val = _morph;
-        for (int i = 0; i < 8; i ++)
+        for (int i = 0; i < 26; i ++)
         {
             if (_morph == 0)
                 val = max(val, vals[i]);

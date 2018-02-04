@@ -4,15 +4,15 @@ using UnityEngine;
 
 public class DensityFieldFilter : MonoBehaviour
 {
-	private enum FilterType
-	{
-		Dilate = 0,
-		Erode = 1,
-		GaussianX = 2,
-		GaussianY = 3,
-		GaussianZ = 4,
-		Copy = 5
-	}
+    private enum FilterType
+    {
+        Dilate = 0,
+        Erode = 1,
+        GaussianX = 2,
+        GaussianY = 3,
+        GaussianZ = 4,
+        Copy = 5
+    }
     public Texture DensityTexture { get; set; }
     public RenderTexture FilteredTexture0 { get; set; }
     public RenderTexture FilteredTexture1 { get; set; }
@@ -49,42 +49,48 @@ public class DensityFieldFilter : MonoBehaviour
         Output.DensityTexture = FilteredTexture1;
     }
 
-	RenderTexture m_lastBuffer;
+    RenderTexture m_lastBuffer;
 
     void RunFilter(FilterType mode)
     {
-		Texture src;
-		RenderTexture dst;
+        Texture src;
+        RenderTexture dst;
 
-		 if (m_lastBuffer == null)
-		 {
-			src = DensityTexture;
-			dst = FilteredTexture0;
-		 }
-		else // swap buffers
-		{
-			src = m_lastBuffer;
-			dst = (m_lastBuffer == FilteredTexture0) ? FilteredTexture1 : FilteredTexture0;
-		}
+        if (m_lastBuffer == null)
+        {
+            src = DensityTexture;
+            dst = FilteredTexture0;
+        }
+        else // swap buffers
+        {
+            src = m_lastBuffer;
+            dst = (m_lastBuffer == FilteredTexture0) ? FilteredTexture1 : FilteredTexture0;
+        }
 
         FilterCS.SetTexture(kernelMC, "_densityTexture", src);
         FilterCS.SetTexture(kernelMC, "_densityTextureOutput", dst);
-        FilterCS.SetInt("_morph", (int) mode);
+        FilterCS.SetInt("_morph", (int)mode);
         RenderTexture.active = dst;
 
         FilterCS.Dispatch(kernelMC, Output.Resolution / 8, Output.Resolution / 8, Output.Resolution / 8);
 
         RenderTexture.active = null;
 
-		m_lastBuffer = dst;
+        m_lastBuffer = dst;
     }
 
     [ContextMenu("Filter")]
-    public void Filter( int erode, int dilate, float gaussian)
+    public void Filter(bool prefilter, int erode, int dilate, float gaussian)
     {
-		m_lastBuffer = null;
+        m_lastBuffer = null;
 
-		RunFilter(FilterType.Copy);
+        RunFilter(FilterType.Copy);
+
+        if (prefilter)
+        {
+            RunFilter(FilterType.Erode);
+            RunFilter(FilterType.Dilate);
+        }
 
         for (int i = 0; i < dilate; i++)
             RunFilter(FilterType.Dilate);

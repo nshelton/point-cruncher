@@ -32,11 +32,11 @@ void PointSampler (uint3 id : SV_DispatchThreadID)
 	
 	for ( int i = cell.y; i > 0; i --)
 	{
-		if(cell.y > _gridSize)
-			continue;
-	
-		cell.y = i;
-		_outputTexture[cell] = _outputTexture[cell] + (float4)1.0;
+		if(cell.y < _gridSize)
+		{
+			cell.y = i;
+			_outputTexture[cell] = _outputTexture[cell] + (float4)1.0;
+		}	
 	}
 }
 

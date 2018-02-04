@@ -23,6 +23,11 @@ namespace PavelKouril.MarchingCubesGPU
 
         [SerializeField]
         public Material exportMaterial;
+
+        [SerializeField]
+        [Range(0.01f,1)]
+        private float m_isoLevel = 0.5f;
+
         private void Awake()
         {
             kernelMC = MarchingCubesCS.FindKernel("MarchingCubes");
@@ -38,7 +43,6 @@ namespace PavelKouril.MarchingCubesGPU
             argBuffer = new ComputeBuffer(4, sizeof(int), ComputeBufferType.IndirectArguments);
 
             MarchingCubesCS.SetInt("_gridSize", Resolution);
-            MarchingCubesCS.SetFloat("_isoLevel", 0.5f);
 
             MarchingCubesCS.SetBuffer(kernelMC, "triangleRW", appendVertexBuffer);
             initialized = true;
@@ -53,6 +57,7 @@ namespace PavelKouril.MarchingCubesGPU
     
             MarchingCubesCS.SetTexture(kernelMC, "_densityTexture", DensityTexture);
             appendVertexBuffer.SetCounterValue(0);
+            MarchingCubesCS.SetFloat("_isoLevel", m_isoLevel);
 
             MarchingCubesCS.Dispatch(kernelMC, Resolution / 8, Resolution / 8, Resolution / 8);
 
